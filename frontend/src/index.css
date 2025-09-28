@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* DevOps Dashboard Design System - Dark Theme */
+
+@layer base {
+  :root {
+    /* Professional dark theme - subtle and refined */
+    --background: 220 39% 5%;
+    --foreground: 220 14% 89%;
+    
+    /* Card and surface colors */
+    --card: 220 39% 8%;
+    --card-foreground: 220 14% 89%;
+    --card-accent: 220 39% 11%;
+    
+    /* Professional blue accent - more muted */
+    --primary: 217 54% 51%;
+    --primary-foreground: 220 39% 5%;
+    --primary-glow: 217 54% 61%;
+    
+    /* Secondary colors */
+    --secondary: 220 39% 12%;
+    --secondary-foreground: 220 14% 89%;
+    
+    /* Success green - more professional */
+    --success: 142 53% 42%;
+    --success-foreground: 220 14% 89%;
+    --success-glow: 142 53% 52%;
+    
+    /* Error red - more muted */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 220 14% 89%;
+    --destructive-glow: 0 72% 61%;
+    
+    /* Warning amber - more subtle */
+    --warning: 43 84% 55%;
+    --warning-foreground: 220 39% 5%;
+    --warning-glow: 43 84% 65%;
+    
+    /* Muted colors */
+    --muted: 220 39% 10%;
+    --muted-foreground: 220 14% 71%;
+    
+    /* Accent colors */
+    --accent: 220 39% 14%;
+    --accent-foreground: 220 14% 89%;
+    
+    /* Borders and inputs */
+    --border: 220 39% 18%;
+    --input: 220 39% 12%;
+    --ring: 217 54% 51%;
+    
+    /* Popover */
+    --popover: 222 47% 6%;
+    --popover-foreground: 213 27% 84%;
+
+    --radius: 0.75rem;
+    
+    /* Professional gradients - subtle and elegant */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--primary) / 0.05));
+    --gradient-card: linear-gradient(135deg, hsl(var(--card)), hsl(var(--card-accent)));
+    --gradient-success: linear-gradient(135deg, hsl(var(--success) / 0.1), hsl(var(--success) / 0.05));
+    --gradient-danger: linear-gradient(135deg, hsl(var(--destructive) / 0.1), hsl(var(--destructive) / 0.05));
+    
+    /* Professional shadows - subtle depth */
+    --shadow-primary: 0 1px 3px hsl(var(--primary) / 0.1);
+    --shadow-card: 0 2px 8px hsl(220 39% 2% / 0.6);
+    --shadow-success: 0 1px 3px hsl(var(--success) / 0.1);
+    --shadow-danger: 0 1px 3px hsl(var(--destructive) / 0.1);
+    
+    /* Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    font-feature-settings: 'kern' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  /* Professional metric cards */
+  .metric-card {
+    @apply bg-card border border-border rounded-xl p-6 backdrop-blur-sm;
+    background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--card-accent)));
+    box-shadow: var(--shadow-card);
+    transition: var(--transition-smooth);
+  }
+  
+  .metric-card:hover {
+    @apply border-border/60 transform translate-y-[-1px];
+    box-shadow: 0 4px 12px hsl(220 39% 2% / 0.8);
+  }
+  
+  /* Chat message bubbles */
+  .chat-bubble-user {
+    @apply bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-4 py-3 max-w-xs ml-auto;
+    box-shadow: var(--shadow-primary);
+  }
+  
+  .chat-bubble-ai {
+    @apply bg-secondary text-secondary-foreground rounded-2xl rounded-bl-sm px-4 py-3 max-w-md;
+    box-shadow: var(--shadow-card);
+  }
+  
+  /* Professional sidebar */
+  .sidebar-glow {
+    background: linear-gradient(180deg, hsl(var(--card)), hsl(var(--card-accent)));
+    border-right: 1px solid hsl(var(--border));
+    backdrop-filter: blur(12px);
+  }
+  
+  /* Status indicators */
+  .status-success {
+    @apply text-success;
+    filter: drop-shadow(var(--shadow-success));
+  }
+  
+  .status-danger {
+    @apply text-destructive;
+    filter: drop-shadow(var(--shadow-danger));
+  }
+  
+  .status-warning {
+    @apply text-warning;
+    filter: drop-shadow(0 0 10px hsl(var(--warning) / 0.3));
+  }
+}
