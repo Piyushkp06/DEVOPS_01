@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") 
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         Role      @default(ENGINEER)
+  createdAt    DateTime  @default(now())
+
+  services     Service[]
+  incidents    Incident[] @relation("ReportedIncidents")
+  deployments  Deployment[]
+}
+
+model Service {
+  id          String     @id @default(cuid())
+  name        String
+  status      ServiceStatus @default(HEALTHY)
+  lastChecked DateTime?
+  metrics     Json?
+  ownerId     String
+  owner       User        @relation(fields: [ownerId], references: [id])
+
+  incidents   Incident[]
+  logs        Log[]
+  deployments Deployment[]
+}
+
+model Incident {
+  id          String       @id @default(cuid())
+  title       String
+  description String
+  severity    Severity     @default(LOW)
+  status      IncidentStatus @default(OPEN)
+  createdAt   DateTime     @default(now())
+  resolvedAt  DateTime?
+  serviceId   String
+  service     Service      @relation(fields: [serviceId], references: [id])
+  reportedById String
+  reportedBy  User         @relation("ReportedIncidents", fields: [reportedById], references: [id])
+
+  actions     Action[]
+}
+
+model Action {
+  id          String    @id @default(cuid())
+  incidentId  String
+  incident    Incident  @relation(fields: [incidentId], references: [id])
+  performedBy String    
+  commandRun  String
+  result      String?
+  timestamp   DateTime  @default(now())
+}
+
+model Log {
+  id        String    @id @default(cuid())
+  serviceId String
+  service   Service   @relation(fields: [serviceId], references: [id])
+  timestamp DateTime  @default(now())
+  level     LogLevel
+  message   String
+  metadata  Json?
+}
+
+model Deployment {
+  id           String   @id @default(cuid())
+  serviceId    String
+  service      Service  @relation(fields: [serviceId], references: [id])
+  version      String
+  status       DeployStatus @default(SUCCESS)
+  deployedAt   DateTime @default(now())
+  rolledBackAt DateTime?
+  deployedById String
+  deployedBy   User     @relation(fields: [deployedById], references: [id])
+}
+
+enum Role {
+  ADMIN
+  ENGINEER
+}
+
+enum ServiceStatus {
+  HEALTHY
+  DEGRADED
+  DOWN
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IncidentStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+}
+
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+}
+
+enum DeployStatus {
+  SUCCESS
+  FAILED
+  ROLLED_BACK
+}

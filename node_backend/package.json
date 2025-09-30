@@ -12,11 +12,13 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@prisma/client": "^6.16.2",
     "axios": "^1.12.2",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "kafka-node": "^5.0.0",
     "kubernetes-client": "^9.0.0",
+    "prisma": "^6.16.2",
     "redis": "^5.8.2"
   }
 }
