@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import prisma from "../prisma/client.js"; 
+import prisma from "../prisma/prismaClient.js"; 
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
@@ -9,10 +9,10 @@ const generateToken = (payload) => {
 };
 export const register = async (req, res, next) => {
   try {
-    const { email, password, role } = req.body;
+    const { name, email, password, role } = req.body;
 
-    if (!email || !password || !role) {
-      throw new ApiError(400, "Email, password, and role are required");
+    if (!name || !email || !password || !role) {
+      throw new ApiError(400, "Name, email, password, and role are required");
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -24,10 +24,12 @@ export const register = async (req, res, next) => {
 
     const user = await prisma.user.create({
       data: {
+        name,
         email,
         password: hashedPassword,
         role,
       },
+      select: { id: true, name: true, email: true, role: true, createdAt: true }
     });
 
     const token = generateToken({ userId: user.id, role: user.role });
@@ -49,7 +51,10 @@ export const login = async (req, res, next) => {
       throw new ApiError(400, "Email and password are required");
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ 
+      where: { email },
+      select: { id: true, name: true, email: true, role: true, password: true, createdAt: true }
+    });
     if (!user) {
       throw new ApiError(404, "User not found");
     }
@@ -63,9 +68,12 @@ export const login = async (req, res, next) => {
 
     res.cookie("jwt", token, { httpOnly: true, secure: false });
 
+    // Remove password from response
+    const { password: _, ...userWithoutPassword } = user;
+
     return res
       .status(200)
-      .json(new ApiResponse(200, { user, token }, "Login successful"));
+      .json(new ApiResponse(200, { user: userWithoutPassword, token }, "Login successful"));
   } catch (error) {
     next(error);
   }
@@ -83,7 +91,10 @@ export const logout = async (req, res, next) => {
 
 export const getCurrentUser = async (req, res, next) => {
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.user._id } });
+    const user = await prisma.user.findUnique({ 
+      where: { id: req.user.userId },
+      select: { id: true, name: true, email: true, role: true, createdAt: true }
+    });
 
     if (!user) {
       throw new ApiError(404, "User not found");

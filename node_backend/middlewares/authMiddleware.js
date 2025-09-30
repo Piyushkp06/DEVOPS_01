@@ -8,15 +8,15 @@ export const verifyToken = (req, res, next) => {
     return res.status(401).send("You are not authenticated!");
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, payload) => {
+  jwt.verify(token, process.env.JWT_KEY, (err, payload) => {
     if (err) {
       console.log("JWT verification failed", err);
       return res.status(403).send("Token is not valid!");
     }
 
-    // Attach IDs for compatibility
+    // Attach user data for compatibility with controllers
     req.user = {
-      id: payload.id,
+      userId: payload.userId,
       role: payload.role,
     };
 
