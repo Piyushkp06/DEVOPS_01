@@ -1,6 +1,7 @@
 import prisma from "../prisma/prismaClient.js"; 
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import redis from "../redis/redisClient.js";
 
 // Create a new action for an incident
 export const createAction = async (req, res, next) => {

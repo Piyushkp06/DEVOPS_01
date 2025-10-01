@@ -1,6 +1,7 @@
 import prisma from "../prisma/prismaClient.js"; 
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import redis from "../redis/redisClient.js";
 
 // Create a new deployment
 export const createDeployment = async (req, res, next) => {
@@ -32,6 +33,12 @@ export const createDeployment = async (req, res, next) => {
         }
       }
     });
+
+    // Clear relevant caches
+    await redis.del('deployments:all');
+    await redis.del(`deployments:service:${serviceId}`);
+    await redis.del(`deployments:user:${deployedById}`);
+    await redis.del('deployments:stats');
 
     return res
       .status(201)

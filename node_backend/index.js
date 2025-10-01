@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import axios from 'axios';
+import cookieParser from 'cookie-parser';
 import authRoutes from './routes/authRoutes.js';
 import incidentRoutes from './routes/incidentRoutes.js';
 import actionRoutes from './routes/actionRoutes.js';
@@ -14,6 +15,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 // Routes
 app.get('/', (req, res) => {

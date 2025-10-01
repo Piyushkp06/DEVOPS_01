@@ -1,10 +1,20 @@
 import prisma from "../prisma/prismaClient.js"; 
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import redis from "../redis/redisClient.js";
+import { isRateLimited, getIdentifier } from "../middlewares/rateLimiter.js";
 
 // Create a new log entry
 export const createLog = async (req, res, next) => {
   try {
+    const identifier = getIdentifier(req);
+    
+    // Check rate limit for log creation
+    const limited = await isRateLimited(identifier, 'logs');
+    if (limited) {
+      throw new ApiError(429, "Too many log creation attempts. Try again later.");
+    }
+
     const { serviceId, level, message, metadata } = req.body;
 
     if (!serviceId || !level || !message) {
@@ -28,6 +38,10 @@ export const createLog = async (req, res, next) => {
         service: true
       }
     });
+
+    // Clear relevant caches (but don't cache individual logs due to volume)
+    await redis.del(`logs:service:${serviceId}`);
+    await redis.del('logs:stats');
 
     return res
       .status(201)

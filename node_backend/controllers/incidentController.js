@@ -1,10 +1,20 @@
 import prisma from "../prisma/prismaClient.js"; 
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import redis from "../redis/redisClient.js";
+import { isRateLimited, getIdentifier } from "../middlewares/rateLimiter.js";
 
 // Create a new incident
 export const createIncident = async (req, res, next) => {
   try {
+    const identifier = getIdentifier(req);
+    
+    // Check rate limit
+    const limited = await isRateLimited(identifier, 'incident');
+    if (limited) {
+      throw new ApiError(429, "Too many incident creation attempts. Try again later.");
+    }
+
     const { title, description, severity, serviceId } = req.body;
     const reportedById = req.user.userId;
 
@@ -35,6 +45,11 @@ export const createIncident = async (req, res, next) => {
       }
     });
 
+    // Clear relevant caches
+    await redis.del('incidents:all');
+    await redis.del(`incidents:service:${serviceId}`);
+    await redis.del('incidents:stats');
+
     return res
       .status(201)
       .json(new ApiResponse(201, incident, "Incident created successfully"));
@@ -48,6 +63,17 @@ export const getAllIncidents = async (req, res, next) => {
   try {
     const { status, severity, serviceId, page = 1, limit = 10 } = req.query;
     
+    // Create cache key based on query parameters
+    const cacheKey = `incidents:all:${page}:${limit}:${status || 'all'}:${severity || 'all'}:${serviceId || 'all'}`;
+    
+    // Check cache first
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+      return res
+        .status(200)
+        .json(new ApiResponse(200, JSON.parse(cachedData), "Incidents fetched successfully (cached)"));
+    }
+
     const where = {};
     if (status) where.status = status;
     if (severity) where.severity = severity;
@@ -75,17 +101,22 @@ export const getAllIncidents = async (req, res, next) => {
       prisma.incident.count({ where })
     ]);
 
+    const result = { 
+      incidents, 
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+
+    // Cache for 5 minutes
+    await redis.setex(cacheKey, 300, JSON.stringify(result));
+
     return res
       .status(200)
-      .json(new ApiResponse(200, { 
-        incidents, 
-        pagination: {
-          total,
-          page: parseInt(page),
-          limit: parseInt(limit),
-          totalPages: Math.ceil(total / limit)
-        }
-      }, "Incidents fetched successfully"));
+      .json(new ApiResponse(200, result, "Incidents fetched successfully"));
   } catch (error) {
     next(error);
   }
@@ -95,6 +126,16 @@ export const getAllIncidents = async (req, res, next) => {
 export const getIncidentById = async (req, res, next) => {
   try {
     const { id } = req.params;
+
+    // Check cache first
+    const cacheKey = `incident:${id}`;
+    const cachedIncident = await redis.get(cacheKey);
+    
+    if (cachedIncident) {
+      return res
+        .status(200)
+        .json(new ApiResponse(200, JSON.parse(cachedIncident), "Incident fetched successfully (cached)"));
+    }
 
     const incident = await prisma.incident.findUnique({
       where: { id },
@@ -112,6 +153,9 @@ export const getIncidentById = async (req, res, next) => {
     if (!incident) {
       throw new ApiError(404, "Incident not found");
     }
+
+    // Cache for 10 minutes
+    await redis.setex(cacheKey, 600, JSON.stringify(incident));
 
     return res
       .status(200)

@@ -1,10 +1,20 @@
 import prisma from "../prisma/prismaClient.js"; 
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import redis from "../redis/redisClient.js";
+import { isRateLimited, getIdentifier } from "../middlewares/rateLimiter.js";
 
 // Create a new service
 export const createService = async (req, res, next) => {
   try {
+    const identifier = getIdentifier(req);
+    
+    // Check rate limit
+    const limited = await isRateLimited(identifier, 'crud');
+    if (limited) {
+      throw new ApiError(429, "Too many service creation attempts. Try again later.");
+    }
+
     const { name, status, metrics } = req.body;
     const ownerId = req.user.userId;
 
@@ -43,6 +53,11 @@ export const createService = async (req, res, next) => {
       }
     });
 
+    // Clear relevant caches
+    await redis.del('services:all');
+    await redis.del(`services:owner:${ownerId}`);
+    await redis.del('services:stats');
+
     return res
       .status(201)
       .json(new ApiResponse(201, service, "Service created successfully"));
@@ -56,6 +71,17 @@ export const getAllServices = async (req, res, next) => {
   try {
     const { status, ownerId, page = 1, limit = 10 } = req.query;
     
+    // Create cache key
+    const cacheKey = `services:all:${page}:${limit}:${status || 'all'}:${ownerId || 'all'}`;
+    
+    // Check cache first
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+      return res
+        .status(200)
+        .json(new ApiResponse(200, JSON.parse(cachedData), "Services fetched successfully (cached)"));
+    }
+
     const where = {};
     if (status) where.status = status;
     if (ownerId) where.ownerId = ownerId;
@@ -93,17 +119,22 @@ export const getAllServices = async (req, res, next) => {
       prisma.service.count({ where })
     ]);
 
+    const result = { 
+      services, 
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+
+    // Cache for 5 minutes
+    await redis.setex(cacheKey, 300, JSON.stringify(result));
+
     return res
       .status(200)
-      .json(new ApiResponse(200, { 
-        services, 
-        pagination: {
-          total,
-          page: parseInt(page),
-          limit: parseInt(limit),
-          totalPages: Math.ceil(total / limit)
-        }
-      }, "Services fetched successfully"));
+      .json(new ApiResponse(200, result, "Services fetched successfully"));
   } catch (error) {
     next(error);
   }
@@ -113,6 +144,16 @@ export const getAllServices = async (req, res, next) => {
 export const getServiceById = async (req, res, next) => {
   try {
     const { id } = req.params;
+
+    // Check cache first
+    const cacheKey = `service:${id}`;
+    const cachedService = await redis.get(cacheKey);
+    
+    if (cachedService) {
+      return res
+        .status(200)
+        .json(new ApiResponse(200, JSON.parse(cachedService), "Service fetched successfully (cached)"));
+    }
 
     const service = await prisma.service.findUnique({
       where: { id },
@@ -155,6 +196,9 @@ export const getServiceById = async (req, res, next) => {
     if (!service) {
       throw new ApiError(404, "Service not found");
     }
+
+    // Cache for 10 minutes
+    await redis.setex(cacheKey, 600, JSON.stringify(service));
 
     return res
       .status(200)
