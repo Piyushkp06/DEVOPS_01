@@ -11,12 +11,12 @@ import {
   getLogStats,
   searchLogs
 } from "../controllers/logController.js";
-import { verifyToken } from "../middlewares/authMiddleware.js";
+import { authenticate } from "../middlewares/authMiddleware.js";
 
 const logRoutes = Router();
 
 // All log routes require authentication
-logRoutes.use(verifyToken);
+logRoutes.use(authenticate);
 
 // Log CRUD routes
 logRoutes.post("/", createLog);

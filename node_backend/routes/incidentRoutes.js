@@ -7,12 +7,12 @@ import {
   deleteIncident,
   getIncidentsByService
 } from "../controllers/incidentController.js";
-import { verifyToken } from "../middlewares/authMiddleware.js";
+import { authenticate } from "../middlewares/authMiddleware.js";
 
 const incidentRoutes = Router();
 
 // All incident routes require authentication
-incidentRoutes.use(verifyToken);
+incidentRoutes.use(authenticate);
 
 // Incident CRUD routes
 incidentRoutes.post("/", createIncident);

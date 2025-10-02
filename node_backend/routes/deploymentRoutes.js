@@ -10,12 +10,12 @@ import {
   rollbackDeployment,
   getDeploymentStats
 } from "../controllers/deploymentController.js";
-import { verifyToken } from "../middlewares/authMiddleware.js";
+import { authenticate } from "../middlewares/authMiddleware.js";
 
 const deploymentRoutes = Router();
 
 // All deployment routes require authentication
-deploymentRoutes.use(verifyToken);
+deploymentRoutes.use(authenticate);
 
 // Deployment CRUD routes
 deploymentRoutes.post("/", createDeployment);

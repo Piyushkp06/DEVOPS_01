@@ -8,12 +8,12 @@ import {
   getActionsByIncident,
   getActionsByUser
 } from "../controllers/actionController.js";
-import { verifyToken } from "../middlewares/authMiddleware.js";
+import { authenticate } from "../middlewares/authMiddleware.js";
 
 const actionRoutes = Router();
 
 // All action routes require authentication
-actionRoutes.use(verifyToken);
+actionRoutes.use(authenticate);
 
 // Action CRUD routes
 actionRoutes.post("/", createAction);

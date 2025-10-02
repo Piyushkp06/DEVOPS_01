@@ -8,12 +8,12 @@ import {
   getServicesByOwner,
   updateServiceHealth
 } from "../controllers/serviceController.js";
-import { verifyToken } from "../middlewares/authMiddleware.js";
+import { authenticate } from "../middlewares/authMiddleware.js";
 
 const serviceRoutes = Router();
 
 // All service routes require authentication
-serviceRoutes.use(verifyToken);
+serviceRoutes.use(authenticate);
 
 // Service CRUD routes
 serviceRoutes.post("/", createService);
