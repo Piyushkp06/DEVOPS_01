@@ -1,59 +1,111 @@
-version: '3.8'
-
 services:
-  python_backend:
-    build: ./python_backend
-    ports:
-      - "8000:8000"
-    environment:
-      - ENV=development
-    networks:
-      - app-network
-
-  node_backend:
-    build: ./node_backend
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=development
-    networks:
-      - app-network
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "5173:5173"
-    environment:
-      - NODE_ENV=development
-    networks:
-      - app-network
-
+  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
+    container_name: devops-postgres
     environment:
       POSTGRES_DB: devops_db
       POSTGRES_USER: devops_user
-      POSTGRES_PASSWORD: devops_pass
+      POSTGRES_PASSWORD: devops_password
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - app-network
+      - devops-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devops_user -d devops_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
+  # Redis Cache
   redis:
     image: redis:7-alpine
+    container_name: devops-redis
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
-      - app-network
+      - devops-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    command: redis-server --appendonly yes
+
+  # Node.js Backend
+  node-backend:
+    build:
+      context: ./node_backend
+      dockerfile: Dockerfile
+    container_name: devops-node-backend
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://devops_user:devops_password@postgres:5432/devops_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_KEY=your-super-secret-jwt-key-here
+      - ACCESS_TOKEN_SECRET=your-access-token-secret-here
+      - REFRESH_TOKEN_SECRET=your-refresh-token-secret-here
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - devops-network
+    volumes:
+      - ./node_backend:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  # Python Backend
+  python-backend:
+    build:
+      context: ./python_backend
+      dockerfile: Dockerfile
+    container_name: devops-python-backend
+    environment:
+      - DATABASE_URL=postgresql://devops_user:devops_password@postgres:5432/devops_db
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - devops-network
+    volumes:
+      - ./python_backend:/app
+    restart: unless-stopped
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: devops-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - node-backend
+      - python-backend
+    networks:
+      - devops-network
+    restart: unless-stopped
 
 volumes:
   postgres_data:
   redis_data:
 
 networks:
-  app-network:
+  devops-network:
     driver: bridge
