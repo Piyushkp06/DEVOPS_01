@@ -2,10 +2,80 @@
 @tailwind components;
 @tailwind utilities;
 
-/* DevOps Dashboard Design System - Dark Theme */
+/* DevOps Dashboard Design System - Dark & Light Themes */
 
 @layer base {
   :root {
+    /* Light theme colors */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    
+    /* Card and surface colors */
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --card-accent: 210 40% 98%;
+    
+    /* Primary colors */
+    --primary: 217 54% 51%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 217 54% 61%;
+    
+    /* Secondary colors */
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    
+    /* Success green */
+    --success: 142 53% 42%;
+    --success-foreground: 0 0% 100%;
+    --success-glow: 142 53% 52%;
+    
+    /* Error red */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-glow: 0 72% 61%;
+    
+    /* Warning amber */
+    --warning: 43 84% 55%;
+    --warning-foreground: 222.2 84% 4.9%;
+    --warning-glow: 43 84% 65%;
+    
+    /* Muted colors */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    
+    /* Accent colors */
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    
+    /* Borders and inputs */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 217 54% 51%;
+    
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --radius: 0.75rem;
+    
+    /* Gradients for light mode */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary) / 0.05), hsl(var(--primary) / 0.02));
+    --gradient-card: linear-gradient(135deg, hsl(var(--card)), hsl(var(--card-accent)));
+    --gradient-success: linear-gradient(135deg, hsl(var(--success) / 0.05), hsl(var(--success) / 0.02));
+    --gradient-danger: linear-gradient(135deg, hsl(var(--destructive) / 0.05), hsl(var(--destructive) / 0.02));
+    
+    /* Shadows for light mode */
+    --shadow-primary: 0 1px 3px hsl(var(--primary) / 0.15);
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --shadow-success: 0 1px 3px hsl(var(--success) / 0.15);
+    --shadow-danger: 0 1px 3px hsl(var(--destructive) / 0.15);
+    
+    /* Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .dark {
     /* Professional dark theme - subtle and refined */
     --background: 220 39% 5%;
     --foreground: 220 14% 89%;
@@ -55,8 +125,6 @@
     /* Popover */
     --popover: 222 47% 6%;
     --popover-foreground: 213 27% 84%;
-
-    --radius: 0.75rem;
     
     /* Professional gradients - subtle and elegant */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--primary) / 0.05));
@@ -69,10 +137,6 @@
     --shadow-card: 0 2px 8px hsl(220 39% 2% / 0.6);
     --shadow-success: 0 1px 3px hsl(var(--success) / 0.1);
     --shadow-danger: 0 1px 3px hsl(var(--destructive) / 0.1);
-    
-    /* Transitions */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
 }
 

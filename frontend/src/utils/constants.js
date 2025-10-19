@@ -56,5 +56,11 @@ export const AI_HEALTH_ROUTE = "/api/ai/health";
 export const AI_ANALYZE_URL = `${AI_BACKEND_HOST}${AI_ANALYZE_ROUTE}`;
 export const AI_HEALTH_URL = `${AI_BACKEND_HOST}${AI_HEALTH_ROUTE}`;
 
+// AI Routes Object (for easier import)
+export const AI_ROUTES = {
+  ANALYZE: AI_ANALYZE_URL,
+  HEALTH: AI_HEALTH_URL,
+};
+
 // Request timeout (in milliseconds)
 export const API_TIMEOUT = 60000; // 60 seconds for AI processing
