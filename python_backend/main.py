@@ -12,7 +12,7 @@ app = FastAPI(
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "http://localhost:5174"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,20 +28,38 @@ async def root():
         "version": "1.0.0",
         "status": "running",
         "endpoints": {
-            "POST /api/ai/analyze": "AI analysis for logs, incidents, services",
-            "GET /api/ai/health": "Health check",
-            "GET /docs": "API documentation"
+            "GET /": "Platform information",
+            "GET /health": "Platform health check",
+            "GET /docs": "API documentation (Swagger UI)",
+            "GET /api/ai/": "AI agent information",
+            "GET /api/ai/health": "AI agent health check",
+            "POST /api/ai/analyze": "AI analysis for logs, incidents, services, deployments"
         }
     }
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "service": "DevOps AI Platform"}
+    return {
+        "status": "healthy",
+        "service": "DevOps AI Platform",
+        "components": {
+            "api": "running",
+            "ai_agent": "available"
+        }
+    }
 
 if __name__ == "__main__":
+    print("=" * 60)
+    print("🚀 Starting DevOps AI Platform")
+    print("=" * 60)
+    print(f"📍 Server: http://localhost:8000")
+    print(f"📚 API Docs: http://localhost:8000/docs")
+    print(f"🤖 AI Agent: http://localhost:8000/api/ai")
+    print("=" * 60)
+    
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
+        host="127.0.0.1",  # Changed from localhost to 127.0.0.1
         port=8000,
         reload=True
     )
