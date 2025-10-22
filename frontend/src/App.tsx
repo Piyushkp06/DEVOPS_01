@@ -10,6 +10,7 @@ import Services from "./pages/Services";
 import Deployments from "./pages/Deployments";
 import AIAnalyzer from "./pages/AIAnalyzer";
 import Settings from "./pages/Settings";
+import Monitoring from "./pages/Monitoring";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/services" element={<Services />} />
           <Route path="/deployments" element={<Deployments />} />
           <Route path="/ai-analyzer" element={<AIAnalyzer />} />
+          <Route path="/monitoring" element={<Monitoring />} />
           <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

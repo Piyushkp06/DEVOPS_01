@@ -13,7 +13,7 @@ import {
   Menu,
   X,
   BarChart3,
-  MessageSquare,
+  Activity,
   Settings
 } from 'lucide-react';
 import { useState } from 'react';
@@ -24,6 +24,7 @@ interface LayoutProps {
 
 const mainNavigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Monitoring', href: '/monitoring', icon: Activity },
   { name: 'AI Analyzer', href: '/ai-analyzer', icon: Sparkles },
 ];
 

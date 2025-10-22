@@ -1,4 +1,11 @@
-export const HOST = import.meta.env.VITE_API_URL;
+export const HOST = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+// Python AI Backend Configuration
+// export const AI_BACKEND_HOST = import.meta.env.VITE_AI_API_URL || "http://localhost:8000";
+
+// Monitoring Configuration
+export const PROMETHEUS_URL = import.meta.env.VITE_PROMETHEUS_URL || "http://localhost:9090";
+export const GRAFANA_URL = import.meta.env.VITE_GRAFANA_URL || "http://localhost:3001";
 
 // Node Backend Routes
 export const AUTH_ROUTES = "api/auth";

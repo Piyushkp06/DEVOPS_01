@@ -5,9 +5,46 @@ import httpx
 from groq import Groq
 from datetime import datetime
 from config import settings
+from prometheus_client import Counter, Histogram, Gauge
+import time
 
 # Use APIRouter instead of FastAPI
 router = APIRouter()
+
+# Prometheus metrics
+ai_analysis_requests = Counter(
+    'ai_analysis_requests_total',
+    'Total number of AI analysis requests',
+    ['source', 'status']
+)
+
+ai_analysis_duration = Histogram(
+    'ai_analysis_duration_seconds',
+    'Time spent processing AI analysis',
+    ['source']
+)
+
+groq_api_calls = Counter(
+    'groq_api_calls_total',
+    'Total number of Groq API calls',
+    ['status']
+)
+
+groq_api_duration = Histogram(
+    'groq_api_duration_seconds',
+    'Time spent calling Groq API'
+)
+
+active_analyses = Gauge(
+    'active_ai_analyses',
+    'Number of AI analyses currently in progress'
+)
+
+data_fetch_duration = Histogram(
+    'data_fetch_duration_seconds',
+    'Time spent fetching data from Node backend',
+    ['endpoint']
+)
 
 # Initialize Groq client with error handling
 try:
@@ -128,10 +165,12 @@ async def fetch_from_node_backend(source: str, filters: Optional[Dict] = None):
     
     url = f"{base_url}{endpoint_map.get(source, f'/{source}')}"
     
+    fetch_start = time.time()
     async with httpx.AsyncClient(timeout=30.0) as http_client:
         try:
             response = await http_client.get(url, params=filters or {})
             response.raise_for_status()
+            data_fetch_duration.labels(endpoint=source).observe(time.time() - fetch_start)
             
             # Extract data from nested response structure
             json_response = response.json()
@@ -144,16 +183,19 @@ async def fetch_from_node_backend(source: str, filters: Optional[Dict] = None):
             return json_response
             
         except httpx.HTTPStatusError as e:
+            data_fetch_duration.labels(endpoint=source).observe(time.time() - fetch_start)
             raise HTTPException(
                 status_code=e.response.status_code,
                 detail=f"Node backend error: {e.response.text}"
             )
         except httpx.RequestError as e:
+            data_fetch_duration.labels(endpoint=source).observe(time.time() - fetch_start)
             raise HTTPException(
                 status_code=503,
                 detail=f"Failed to connect to Node backend: {str(e)}"
             )
         except Exception as e:
+            data_fetch_duration.labels(endpoint=source).observe(time.time() - fetch_start)
             raise HTTPException(
                 status_code=500,
                 detail=f"Unexpected error: {str(e)}"
@@ -383,6 +425,9 @@ async def analyze(request: AnalyzeRequest):
     - {"source": "comprehensive", "filters": {"incidentId": "xxx"}, "deep_analysis": true}
     """
     
+    start_time = time.time()
+    active_analyses.inc()
+    
     try:
         related_data = None
         
@@ -393,6 +438,7 @@ async def analyze(request: AnalyzeRequest):
             incident_id = request.filters.get("incidentId") if request.filters else None
             
             if not log_id and not incident_id:
+                ai_analysis_requests.labels(source=request.source, status='error').inc()
                 raise HTTPException(
                     status_code=400,
                     detail="For deep analysis, provide either 'logId' or 'incidentId' in filters"
@@ -403,6 +449,7 @@ async def analyze(request: AnalyzeRequest):
             related_data = comprehensive_data
             
             if not any(comprehensive_data.values()):
+                ai_analysis_requests.labels(source=request.source, status='no_data').inc()
                 return AnalysisResponse(
                     timestamp=datetime.utcnow().isoformat(),
                     source="comprehensive",
@@ -413,6 +460,7 @@ async def analyze(request: AnalyzeRequest):
             
             # Check if AI is available
             if not client:
+                ai_analysis_requests.labels(source=request.source, status='unavailable').inc()
                 return AnalysisResponse(
                     timestamp=datetime.utcnow().isoformat(),
                     source="comprehensive",
@@ -431,6 +479,7 @@ async def analyze(request: AnalyzeRequest):
             data = await fetch_from_node_backend(request.source, request.filters)
             
             if not data:
+                ai_analysis_requests.labels(source=request.source, status='no_data').inc()
                 return AnalysisResponse(
                     timestamp=datetime.utcnow().isoformat(),
                     source=request.source,
@@ -440,6 +489,7 @@ async def analyze(request: AnalyzeRequest):
                 )
             
             if not client:
+                ai_analysis_requests.labels(source=request.source, status='unavailable').inc()
                 return AnalysisResponse(
                     timestamp=datetime.utcnow().isoformat(),
                     source=request.source,
@@ -450,24 +500,35 @@ async def analyze(request: AnalyzeRequest):
             
             prompt = build_analysis_prompt(request.source, data, request.context)
         
-        # Get AI analysis from Groq
-        completion = client.chat.completions.create(
-            model="llama-3.1-70b-versatile",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are an expert DevOps SRE and incident response specialist. Provide detailed, actionable analysis with specific commands and steps."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            temperature=0.3,
-            max_tokens=3000  # Increased for comprehensive analysis
-        )
+        # Get AI analysis from Groq with metrics tracking
+        groq_start = time.time()
+        try:
+            completion = client.chat.completions.create(
+                model="llama-3.1-70b-versatile",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert DevOps SRE and incident response specialist. Provide detailed, actionable analysis with specific commands and steps."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=0.3,
+                max_tokens=3000  # Increased for comprehensive analysis
+            )
+            groq_api_calls.labels(status='success').inc()
+            groq_api_duration.observe(time.time() - groq_start)
+        except Exception as groq_error:
+            groq_api_calls.labels(status='error').inc()
+            raise groq_error
         
         analysis_result = completion.choices[0].message.content
+        
+        # Record successful analysis
+        ai_analysis_requests.labels(source=request.source, status='success').inc()
+        ai_analysis_duration.labels(source=request.source).observe(time.time() - start_time)
         
         return AnalysisResponse(
             timestamp=datetime.utcnow().isoformat(),
@@ -478,9 +539,14 @@ async def analyze(request: AnalyzeRequest):
         )
         
     except HTTPException:
+        ai_analysis_requests.labels(source=request.source, status='error').inc()
         raise
     except Exception as e:
+        ai_analysis_requests.labels(source=request.source, status='error').inc()
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+    finally:
+        active_analyses.dec()
+        ai_analysis_duration.labels(source=request.source).observe(time.time() - start_time)
 
 @router.get("/health")
 async def health_check():

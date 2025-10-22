@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 import uvicorn
 from analyzer import router as analyzer_router
 
@@ -8,6 +9,9 @@ app = FastAPI(
     description="AI-powered DevOps monitoring and incident management",
     version="1.0.0"
 )
+
+# Initialize Prometheus metrics
+Instrumentator().instrument(app).expose(app)
 
 # CORS configuration
 app.add_middleware(
