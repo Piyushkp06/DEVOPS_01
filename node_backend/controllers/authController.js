@@ -39,7 +39,7 @@ export const register = async (req, res, next) => {
       data: {
         name,
         email,
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         role,
       },
       select: { id: true, name: true, email: true, role: true, createdAt: true }
@@ -101,16 +101,16 @@ export const login = async (req, res, next) => {
 
     if (cachedUser) {
       user = JSON.parse(cachedUser);
-      // Still need to get password from DB for comparison
+      // Still need to get passwordHash from DB for comparison
       const dbUser = await prisma.user.findUnique({
         where: { email },
-        select: { password: true },
+        select: { passwordHash: true },
       });
-      user.password = dbUser.password;
+      user.passwordHash = dbUser.passwordHash;
     } else {
       user = await prisma.user.findUnique({ 
         where: { email },
-        select: { id: true, name: true, email: true, role: true, password: true, createdAt: true }
+        select: { id: true, name: true, email: true, role: true, passwordHash: true, createdAt: true }
       });
     }
 
@@ -118,7 +118,7 @@ export const login = async (req, res, next) => {
       throw new ApiError(404, "User not found");
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
       throw new ApiError(401, "Invalid credentials");
     }
@@ -130,8 +130,8 @@ export const login = async (req, res, next) => {
     // Store refresh token in Redis (7 days TTL)
     await redis.setex(`refresh:${user.id}`, 7 * 24 * 60 * 60, refreshToken);
 
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = user;
+    // Remove passwordHash from response
+    const { passwordHash: _, ...userWithoutPassword } = user;
 
     // Cache user data
     await redis.setex(`user:${user.id}`, 3600, JSON.stringify(userWithoutPassword));
