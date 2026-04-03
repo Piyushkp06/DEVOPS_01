@@ -5,8 +5,8 @@ import httpx
 import time
 from typing import Optional, Dict, Any
 from fastapi import HTTPException
-from config import settings
-from analyzer.metrics import data_fetch_duration
+from app.core.config import settings
+from app.utils.metrics import data_fetch_duration
 
 
 async def fetch_comprehensive_data(

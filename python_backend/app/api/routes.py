@@ -4,10 +4,10 @@ API routes for AI analysis endpoints
 from fastapi import APIRouter
 from datetime import datetime
 
-from analyzer.models import AnalyzeRequest, AnalysisResponse
-from analyzer.services.analyzer import perform_analysis
-from analyzer.client import client
-from config import settings
+from app.models.schemas import AnalyzeRequest, AnalysisResponse
+from app.services.analyzer import perform_analysis
+from app.core.client import client
+from app.core.config import settings
 
 
 router = APIRouter()

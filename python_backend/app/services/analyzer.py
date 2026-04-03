@@ -6,11 +6,11 @@ from typing import Dict, Any
 from datetime import datetime
 from fastapi import HTTPException
 
-from analyzer.client import client
-from analyzer.models import AnalyzeRequest, AnalysisResponse
-from analyzer.prompts import build_comprehensive_analysis_prompt, build_analysis_prompt
-from analyzer.services.data_fetcher import fetch_comprehensive_data, fetch_from_node_backend
-from analyzer.metrics import (
+from app.core.client import client
+from app.models.schemas import AnalyzeRequest, AnalysisResponse
+from app.utils.prompts import build_comprehensive_analysis_prompt, build_analysis_prompt
+from app.services.data_fetcher import fetch_comprehensive_data, fetch_from_node_backend
+from app.utils.metrics import (
     ai_analysis_requests,
     ai_analysis_duration,
     groq_api_calls,
@@ -159,7 +159,7 @@ async def _get_groq_analysis(prompt: str, source: str) -> str:
     
     groq_start = time.time()
     try:
-        completion = client.chat.completions.create(
+        completion = await client.chat.completions.create(
             model="llama-3.1-70b-versatile",
             messages=[
                 {

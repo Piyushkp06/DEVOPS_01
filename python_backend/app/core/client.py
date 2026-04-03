@@ -1,11 +1,11 @@
 """
 Groq AI client initialization
 """
-from groq import Groq
-from config import settings
+from groq import AsyncGroq
+from app.core.config import settings
 
 
-def initialize_groq_client() -> Groq | None:
+def initialize_groq_client() -> AsyncGroq | None:
     """
     Initialize Groq client with error handling
     
@@ -17,7 +17,7 @@ def initialize_groq_client() -> Groq | None:
             print("Warning: GROQ_API_KEY not set. AI analysis will be unavailable.")
             return None
         
-        client = Groq(api_key=settings.groq_api_key)
+        client = AsyncGroq(api_key=settings.groq_api_key)
         print("✓ Groq client initialized successfully")
         return client
     except Exception as e:
