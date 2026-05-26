@@ -5,13 +5,17 @@ import {
   getIncidentById,
   updateIncident,
   deleteIncident,
-  getIncidentsByService
+  getIncidentsByService,
+  handleAlertmanagerWebhook
 } from "../controllers/incidentController.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
 
 const incidentRoutes = Router();
 
-// All incident routes require authentication
+// Webhook from Prometheus Alertmanager (no standard user auth)
+incidentRoutes.post("/webhook/alertmanager", handleAlertmanagerWebhook);
+
+// All other incident routes require authentication
 incidentRoutes.use(authenticate);
 
 // Incident CRUD routes

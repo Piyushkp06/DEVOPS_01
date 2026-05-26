@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertCircle, CheckCircle, Clock, RefreshCw, Sparkles } from 'lucide-react';
-import { HOST, GET_ALL_INCIDENTS_ROUTE, UPDATE_INCIDENT_ROUTE, AI_ANALYZE_URL } from '@/utils/constants';
+import { HOST, GET_ALL_INCIDENTS_ROUTE, UPDATE_INCIDENT_ROUTE, AI_ANALYZE_URL, CREATE_ACTION_ROUTE, EXECUTE_ACTION_ROUTE } from '@/utils/constants';
 
 interface Incident {
   id: string;
@@ -30,10 +30,14 @@ const Incidents = () => {
   const fetchIncidents = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${HOST}/${GET_ALL_INCIDENTS_ROUTE}`);
+      const token = localStorage.getItem("token") || "";
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const response = await fetch(`${HOST}/${GET_ALL_INCIDENTS_ROUTE}`, { headers });
       if (response.ok) {
         const data = await response.json();
-        setIncidents(data);
+        setIncidents(data.data?.incidents || []);
       }
     } catch (error) {
       console.error('Error fetching incidents:', error);
@@ -90,6 +94,39 @@ const Incidents = () => {
       setAiSuggestion('Failed to get AI suggestions. Please try again.');
     } finally {
       setAnalyzingAI(false);
+    }
+  };
+
+  const [executing, setExecuting] = useState(false);
+
+  // Send the command "restart" or "scale x" to the Node Backend to patch K8s
+  const executeAutoFix = async (incident: Incident) => {
+    // Basic heuristics: if AI suggests restarting, default to 'restart'
+    const command = aiSuggestion.toLowerCase().includes('scale') ? 'scale 2' : 'restart';
+    setExecuting(true);
+    
+    try {
+      // Step 1: Create the action record in DB
+      let token = localStorage.getItem("token") || "";
+      const createRes = await fetch(`${HOST}/${CREATE_ACTION_ROUTE}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ incidentId: incident.id, commandRun: command })
+      });
+      const createData = await createRes.json();
+      
+      // Step 2: Trigger Kubernetes Execution
+      if(createRes.ok && createData.data?.id) {
+        await fetch(`${HOST}/${EXECUTE_ACTION_ROUTE(createData.data.id)}`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        updateIncidentStatus(incident.id, "RESOLVED"); // Auto-resolve upon success
+      }
+    } catch (error) {
+      console.error("Failed to execute action", error);
+    } finally {
+      setExecuting(false);
     }
   };
 
@@ -219,11 +256,21 @@ const Incidents = () => {
                         {analyzingAI ? 'Analyzing...' : 'Get AI Suggestions'}
                       </Button>
                       {aiSuggestion && (
-                        <Textarea
-                          value={aiSuggestion}
-                          readOnly
-                          className="mt-2 min-h-[150px]"
-                        />
+                        <>
+                          <Textarea
+                            value={aiSuggestion}
+                            readOnly
+                            className="mt-2 min-h-[150px]"
+                          />
+                          <Button 
+                            onClick={() => executeAutoFix(incident)} 
+                            disabled={executing}
+                            variant="default"
+                            className="w-full mt-2 bg-green-600 hover:bg-green-700"
+                          >
+                            {executing ? 'Applying Kubernetes Patch...' : 'Approve & Execute Fix'}
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>

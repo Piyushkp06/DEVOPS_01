@@ -1,7 +1,4 @@
-export const HOST = import.meta.env.VITE_API_URL || "http://localhost:3000";
-
-// Python AI Backend Configuration
-// export const AI_BACKEND_HOST = import.meta.env.VITE_AI_API_URL || "http://localhost:8000";
+export const HOST = import.meta.env.VITE_API_URL || "";
 
 // Monitoring Configuration
 export const PROMETHEUS_URL = import.meta.env.VITE_PROMETHEUS_URL || "http://localhost:9090";
@@ -53,7 +50,7 @@ export const CREATE_ACTION_ROUTE = `${ACTION_ROUTES}/`;
 export const EXECUTE_ACTION_ROUTE = (actionId) => `${ACTION_ROUTES}/${actionId}/execute`;
 
 // Python AI Backend Configuration
-export const AI_BACKEND_HOST = import.meta.env.VITE_AI_API_URL || "http://localhost:8000";
+export const AI_BACKEND_HOST = import.meta.env.VITE_AI_API_URL || "/py-api";
 
 // AI API Routes
 export const AI_ANALYZE_ROUTE = "/api/ai/analyze";

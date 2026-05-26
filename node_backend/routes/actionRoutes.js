@@ -6,7 +6,8 @@ import {
   updateAction,
   deleteAction,
   getActionsByIncident,
-  getActionsByUser
+  getActionsByUser,
+  executeAction
 } from "../controllers/actionController.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
 
@@ -14,6 +15,9 @@ const actionRoutes = Router();
 
 // All action routes require authentication
 actionRoutes.use(authenticate);
+
+// Action Execution
+actionRoutes.post("/:id/execute", executeAction);
 
 // Action CRUD routes
 actionRoutes.post("/", createAction);

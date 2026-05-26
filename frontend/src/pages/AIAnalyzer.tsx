@@ -55,9 +55,10 @@ const AIAnalyzer = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          type: analysisType,
-          timeRange: timeRange,
-          customData: customInput || undefined,
+          source: analysisType,
+          filters: { timeRange: timeRange },
+          context: customInput || undefined,
+          deep_analysis: analysisType === "comprehensive"
         }),
       });
 
@@ -66,7 +67,13 @@ const AIAnalyzer = () => {
       }
 
       const data = await response.json();
-      setResult(data);
+      setResult({
+        summary: data.analysis,
+        severity: data.related_data?.severity || "medium",
+        recommendations: data.recommendations || [],
+        timestamp: data.timestamp || new Date().toISOString(),
+        metrics: data.related_data?.metrics
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred during analysis");
     } finally {
