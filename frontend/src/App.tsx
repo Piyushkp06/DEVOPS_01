@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import AuthSuccess from "./pages/AuthSuccess";
 import Logs from "./pages/Logs";
 import Incidents from "./pages/Incidents";
 import Services from "./pages/Services";
@@ -12,6 +13,7 @@ import AIAnalyzer from "./pages/AIAnalyzer";
 import Settings from "./pages/Settings";
 import Monitoring from "./pages/Monitoring";
 import NotFound from "./pages/NotFound";
+import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +25,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/auth/success" element={<AuthSuccess />} />
           <Route path="/logs" element={<Logs />} />
           <Route path="/incidents" element={<Incidents />} />
           <Route path="/services" element={<Services />} />

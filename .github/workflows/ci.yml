@@ -1,0 +1,84 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  # 1. Frontend Build Check
+  frontend-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Bun (or Node.js)
+        # Using bun since your workspace contains `bun.lockb`
+        uses: oven-sh/setup-bun@v1 
+        with:
+          bun-version: latest
+      - name: Install dependencies
+        run: bun install
+      - name: Typecheck and Build
+        run: bun run build
+
+  # 2. Node Backend Check
+  node-backend-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./node_backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './node_backend/package.json'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run checks (lint/test placeholder)
+        run: |
+          # Add npm run lint or npm test here when configured
+          echo "Node environment verified"
+
+  # 3. Python Backend Check
+  python-backend-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./python_backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run checks
+        run: |
+          # Add flake8, black, pytest here when configured
+          echo "Python environment verified"
+
+  # 4. Global Docker Compose Build Test
+  docker-compose-check:
+    runs-on: ubuntu-latest
+    # Wait for the individual checks to pass before spending time building images
+    needs: [frontend-check, node-backend-check, python-backend-check]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build Docker Compose Services
+        run: |
+          docker-compose build
+        
+      - name: Validate Configurations
+        run: docker-compose config

@@ -15,12 +15,24 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+const allowedOrigins = [
+  process.env.FRONTEND_URL || "http://localhost:8080",
+  process.env.PYTHON_BACKEND_URL || "http://localhost:8000",
+  "http://localhost:8080",
+  "http://localhost:5173",
+  "http://localhost:3000"
+]; 
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:8080" || process.env.PYTHON_BACKEND_URL || "http://localhost:8000",
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-})); 
+}));
 
 app.use(express.json());
 app.use(cookieParser());

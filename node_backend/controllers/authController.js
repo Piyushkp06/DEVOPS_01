@@ -10,6 +10,8 @@ import {
   generateRefreshToken,    
   verifyRefreshToken       
 } from "../utils/jwt.js";
+import axios from 'axios';
+import crypto from 'crypto';
 
 // Using token generation functions from utils/jwt.js
 export const register = async (req, res, next) => {
@@ -291,4 +293,119 @@ export const getCurrentUser = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+};
+
+// --- OAuth helpers and handlers ---
+const FRONTEND_URL = process.env.FRONTEND_URL || process.env.FRONTEND || "http://localhost:8080";
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NODE_BACKEND_URL || "http://localhost:3000";
+
+async function findOrCreateOAuthUser({ name, email }) {
+  if (!email) throw new ApiError(400, 'OAuth provider did not return an email');
+
+  let user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    const randomPassword = crypto.randomBytes(20).toString('hex');
+    const hashedPassword = await bcrypt.hash(randomPassword, 10);
+    user = await prisma.user.create({
+      data: {
+        name: name || email.split('@')[0],
+        email,
+        password: hashedPassword,
+        role: 'ENGINEER'
+      },
+      select: { id: true, name: true, email: true, role: true, createdAt: true }
+    });
+  }
+  return user;
+}
+
+export const oauthGitHub = async (req, res, next) => {
+  try {
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    const redirect = `${BACKEND_URL}/api/auth/oauth/github/callback`;
+    const params = new URLSearchParams({ client_id: clientId, redirect_uri: redirect, scope: 'user:email' });
+    return res.redirect(`https://github.com/login/oauth/authorize?${params.toString()}`);
+  } catch (err) { next(err); }
+};
+
+export const oauthGitHubCallback = async (req, res, next) => {
+  try {
+    const code = req.query.code;
+    if (!code) throw new ApiError(400, 'Missing code from GitHub');
+
+    const tokenResp = await axios.post('https://github.com/login/oauth/access_token', {
+      client_id: process.env.GITHUB_CLIENT_ID,
+      client_secret: process.env.GITHUB_CLIENT_SECRET,
+      code
+    }, { headers: { Accept: 'application/json' } });
+
+    const accessToken = tokenResp.data.access_token;
+    if (!accessToken) throw new ApiError(400, 'Failed to obtain GitHub access token');
+
+    const userResp = await axios.get('https://api.github.com/user', { headers: { Authorization: `token ${accessToken}` } });
+    const emailsResp = await axios.get('https://api.github.com/user/emails', { headers: { Authorization: `token ${accessToken}` } });
+    const primaryEmail = (emailsResp.data || []).find(e => e.primary && e.verified) || emailsResp.data[0];
+    const email = primaryEmail?.email || userResp.data.email;
+    const name = userResp.data.name || userResp.data.login;
+
+    const user = await findOrCreateOAuthUser({ name, email });
+
+    const at = generateAccessToken({ userId: user.id, role: user.role });
+    const rt = generateRefreshToken({ userId: user.id });
+    await redis.setex(`refresh:${user.id}`, 7 * 24 * 60 * 60, rt);
+
+    res.cookie('refreshToken', rt, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res.cookie('jwt', generateToken({ userId: user.id, role: user.role }), { httpOnly: true, sameSite: 'lax' });
+
+    return res.redirect(`${FRONTEND_URL}/auth/success`);
+  } catch (err) { next(err); }
+};
+
+export const oauthGoogle = async (req, res, next) => {
+  try {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const redirect = `${BACKEND_URL}/api/auth/oauth/google/callback`;
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirect,
+      response_type: 'code',
+      scope: 'openid email profile',
+      access_type: 'offline',
+      prompt: 'consent'
+    });
+    return res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+  } catch (err) { next(err); }
+};
+
+export const oauthGoogleCallback = async (req, res, next) => {
+  try {
+    const code = req.query.code;
+    if (!code) throw new ApiError(400, 'Missing code from Google');
+
+    const tokenResp = await axios.post('https://oauth2.googleapis.com/token', new URLSearchParams({
+      code,
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: `${BACKEND_URL}/api/auth/oauth/google/callback`,
+      grant_type: 'authorization_code'
+    }).toString(), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+
+    const idToken = tokenResp.data.id_token;
+    const accessToken = tokenResp.data.access_token;
+    if (!accessToken) throw new ApiError(400, 'Failed to obtain Google access token');
+
+    const userResp = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', { headers: { Authorization: `Bearer ${accessToken}` } });
+    const { email, name } = userResp.data;
+
+    const user = await findOrCreateOAuthUser({ name, email });
+
+    const at = generateAccessToken({ userId: user.id, role: user.role });
+    const rt = generateRefreshToken({ userId: user.id });
+    await redis.setex(`refresh:${user.id}`, 7 * 24 * 60 * 60, rt);
+
+    res.cookie('refreshToken', rt, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res.cookie('jwt', generateToken({ userId: user.id, role: user.role }), { httpOnly: true, sameSite: 'lax' });
+
+    return res.redirect(`${FRONTEND_URL}/auth/success`);
+  } catch (err) { next(err); }
 };
