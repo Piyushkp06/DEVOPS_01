@@ -78,7 +78,7 @@ jobs:
       
       - name: Build Docker Compose Services
         run: |
-          docker-compose build
+          docker compose build
         
       - name: Validate Configurations
-        run: docker-compose config
+        run: docker compose config
