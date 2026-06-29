@@ -1,0 +1,99 @@
+{{- if .Values.kafka.enabled }}
+# ── Zookeeper Deployment ─────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zookeeper
+  namespace: {{ include "devops.namespace" . }}
+  labels:
+    {{- include "devops.labels" . | nindent 4 }}
+    {{- include "devops.selectorLabels" (dict "component" "zookeeper") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "devops.selectorLabels" (dict "component" "zookeeper") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "devops.selectorLabels" (dict "component" "zookeeper") | nindent 8 }}
+    spec:
+      containers:
+        - name: zookeeper
+          image: {{ .Values.kafka.zookeeper.image }}
+          env:
+            - name: ZOOKEEPER_CLIENT_PORT
+              value: "2181"
+            - name: ZOOKEEPER_TICK_TIME
+              value: "2000"
+          ports:
+            - containerPort: 2181
+---
+# ── Zookeeper Service ────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper-service
+  namespace: {{ include "devops.namespace" . }}
+  labels:
+    {{- include "devops.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: 2181
+      targetPort: 2181
+  selector:
+    {{- include "devops.selectorLabels" (dict "component" "zookeeper") | nindent 4 }}
+---
+# ── Kafka Deployment ─────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+  namespace: {{ include "devops.namespace" . }}
+  labels:
+    {{- include "devops.labels" . | nindent 4 }}
+    {{- include "devops.selectorLabels" (dict "component" "kafka") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "devops.selectorLabels" (dict "component" "kafka") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "devops.selectorLabels" (dict "component" "kafka") | nindent 8 }}
+    spec:
+      containers:
+        - name: kafka
+          image: {{ .Values.kafka.image }}
+          env:
+            - name: KAFKA_BROKER_ID
+              value: "1"
+            - name: KAFKA_ZOOKEEPER_CONNECT
+              value: "zookeeper-service:2181"
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: "PLAINTEXT://kafka-service:9092"
+            - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              value: "PLAINTEXT:PLAINTEXT"
+            - name: KAFKA_INTER_BROKER_LISTENER_NAME
+              value: "PLAINTEXT"
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "1"
+          ports:
+            - containerPort: 9092
+---
+# ── Kafka Service ────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-service
+  namespace: {{ include "devops.namespace" . }}
+  labels:
+    {{- include "devops.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: 9092
+      targetPort: 9092
+  selector:
+    {{- include "devops.selectorLabels" (dict "component" "kafka") | nindent 4 }}
+{{- end }}

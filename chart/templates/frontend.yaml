@@ -1,0 +1,61 @@
+# ── Frontend Deployment ───────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: {{ include "devops.namespace" . }}
+  labels:
+    {{- include "devops.labels" . | nindent 4 }}
+    {{- include "devops.selectorLabels" (dict "component" "frontend") | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas.frontend }}
+  selector:
+    matchLabels:
+      {{- include "devops.selectorLabels" (dict "component" "frontend") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "devops.selectorLabels" (dict "component" "frontend") | nindent 8 }}
+    spec:
+      containers:
+        - name: frontend
+          image: "{{ .Values.images.frontend.repository }}:{{ .Values.images.frontend.tag }}"
+          imagePullPolicy: {{ .Values.images.frontend.pullPolicy }}
+          ports:
+            - containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+---
+# ── Frontend Service ──────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: {{ include "devops.namespace" . }}
+  labels:
+    {{- include "devops.labels" . | nindent 4 }}
+spec:
+  type: NodePort
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30000
+  selector:
+    {{- include "devops.selectorLabels" (dict "component" "frontend") | nindent 4 }}

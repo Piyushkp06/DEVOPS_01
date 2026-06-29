@@ -1,0 +1,50 @@
+# ── Redis Deployment ──────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: {{ include "devops.namespace" . }}
+  labels:
+    {{- include "devops.labels" . | nindent 4 }}
+    {{- include "devops.selectorLabels" (dict "component" "redis") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "devops.selectorLabels" (dict "component" "redis") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "devops.selectorLabels" (dict "component" "redis") | nindent 8 }}
+    spec:
+      containers:
+        - name: redis
+          image: {{ .Values.redis.image }}
+          command: ["redis-server", "--appendonly", "yes"]
+          ports:
+            - containerPort: 6379
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+# ── Redis Service ─────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: {{ include "devops.namespace" . }}
+  labels:
+    {{- include "devops.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: 6379
+      targetPort: 6379
+  selector:
+    {{- include "devops.selectorLabels" (dict "component" "redis") | nindent 4 }}

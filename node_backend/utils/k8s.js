@@ -1,9 +1,17 @@
 import * as k8s from "@kubernetes/client-node";
 
-// Initialize kube config from default location (e.g., ~/.kube/config)
-// or from cluster if running inside a pod
+// Initialize kube config.
+// When running inside a K8s pod (Helm install), loadFromCluster() uses the
+// ServiceAccount token mounted at /var/run/secrets/kubernetes.io/serviceaccount.
+// When running locally (docker-compose / dev), loadFromDefault() uses ~/.kube/config.
 const kc = new k8s.KubeConfig();
-kc.loadFromDefault();
+try {
+  kc.loadFromCluster();
+  console.log("✅ K8s client: loaded in-cluster config (ServiceAccount)");
+} catch {
+  kc.loadFromDefault();
+  console.log("ℹ️  K8s client: loaded from default kubeconfig (~/.kube/config)");
+}
 
 const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
 const k8sAppsApi = kc.makeApiClient(k8s.AppsV1Api);

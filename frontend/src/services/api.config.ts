@@ -2,10 +2,11 @@ import axios, { AxiosInstance } from 'axios';
 
 // API Configuration
 export const API_CONFIG = {
-  NODE_BACKEND: import.meta.env.VITE_API_URL || 'http://localhost:3000',
-  PYTHON_BACKEND: import.meta.env.VITE_AI_API_URL || 'http://localhost:8000',
-  PROMETHEUS: import.meta.env.VITE_PROMETHEUS_URL || 'http://localhost:9090',
-  GRAFANA: import.meta.env.VITE_GRAFANA_URL || 'http://localhost:3001',
+  // Use relative paths so Nginx proxies them to the backend services
+  NODE_BACKEND: import.meta.env.VITE_API_URL || '/api',
+  PYTHON_BACKEND: import.meta.env.VITE_AI_API_URL || '/py-api',
+  PROMETHEUS: import.meta.env.VITE_PROMETHEUS_URL || 'http://localhost:30090',
+  GRAFANA: import.meta.env.VITE_GRAFANA_URL || 'http://localhost:30001',
   TIMEOUT: 10000,
 };
 

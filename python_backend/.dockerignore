@@ -10,3 +10,7 @@ venv/
 README.md
 Dockerfile
 .dockerignore
+
+# Ignore local environment variables
+.env
+.env.*

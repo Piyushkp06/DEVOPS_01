@@ -1,0 +1,91 @@
+# =============================================================================
+# DevOps AI Platform — Helm Values
+# =============================================================================
+# Override any of these values via --set or a custom values file:
+#   helm install devops ./chart -f my-values.yaml
+# =============================================================================
+
+# -- Global settings ----------------------------------------------------------
+namespace: devops-platform
+
+# -- Container image settings -------------------------------------------------
+# Change these if you push images to a container registry (e.g. Docker Hub, GCR, ECR).
+images:
+  nodeBackend:
+    repository: devops-node-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  pythonBackend:
+    repository: devops-python-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  frontend:
+    repository: devops-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+
+# -- Replica counts -----------------------------------------------------------
+replicas:
+  nodeBackend: 1
+  pythonBackend: 1
+  frontend: 1
+
+# -- PostgreSQL ---------------------------------------------------------------
+postgres:
+  image: postgres:15-alpine
+  database: devops_db
+  user: devops_user
+  # ⚠️  Change this in production!
+  password: devops_password
+  storage: 1Gi
+
+# -- Redis --------------------------------------------------------------------
+redis:
+  image: redis:7-alpine
+
+# -- Kafka / Zookeeper -------------------------------------------------------
+kafka:
+  enabled: true
+  image: confluentinc/cp-kafka:7.5.0
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+
+# -- Secrets / Auth -----------------------------------------------------------
+# ⚠️  Replace ALL of these before deploying to production!
+secrets:
+  jwtKey: "your-super-secret-jwt-key-here"
+  accessTokenSecret: "your-access-token-secret-here"
+  refreshTokenSecret: "your-refresh-token-secret-here"
+
+# -- AI / LLM ----------------------------------------------------------------
+ai:
+  # Groq API key for the autonomous AI agent.
+  # Get one free at https://console.groq.com
+  groqApiKey: ""
+
+# -- Monitoring ---------------------------------------------------------------
+monitoring:
+  enabled: true
+  prometheus:
+    image: prom/prometheus:latest
+  grafana:
+    image: grafana/grafana:latest
+    adminUser: admin
+    # ⚠️  Change this in production!
+    adminPassword: admin
+  alertmanager:
+    image: prom/alertmanager:latest
+
+# -- Ingress ------------------------------------------------------------------
+ingress:
+  enabled: false
+  className: nginx
+  host: devops.local
+  tls: false
+
+# -- RBAC for autonomous K8s actions ------------------------------------------
+# The platform needs permissions to restart/scale/rollback deployments.
+rbac:
+  # If true, a ServiceAccount + ClusterRole + ClusterRoleBinding are created
+  # so the Python/Node backends can manage deployments in the cluster.
+  create: true

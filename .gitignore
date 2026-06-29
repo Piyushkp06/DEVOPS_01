@@ -57,3 +57,7 @@ python_backend/venv/
 python_backend/__pycache__/
 python_backend/.env
 python_backend/*.pyc
+
+# Helm
+chart/*.tgz
+chart/charts/

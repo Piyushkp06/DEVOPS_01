@@ -1,8 +1,8 @@
 export const HOST = import.meta.env.VITE_API_URL || "";
 
 // Monitoring Configuration
-export const PROMETHEUS_URL = import.meta.env.VITE_PROMETHEUS_URL || "http://localhost:9090";
-export const GRAFANA_URL = import.meta.env.VITE_GRAFANA_URL || "http://localhost:3001";
+export const PROMETHEUS_URL = import.meta.env.VITE_PROMETHEUS_URL || "http://localhost:30090";
+export const GRAFANA_URL = import.meta.env.VITE_GRAFANA_URL || "http://localhost:30001";
 
 // Node Backend Routes
 export const AUTH_ROUTES = "api/auth";

@@ -78,7 +78,7 @@ export const MetricsDashboard = () => {
           <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
               <iframe
-                src="http://localhost:3001/d/devops-ai-overview/devops-ai-platform-overview?orgId=1&theme=light&kiosk"
+                src="http://localhost:30001/d/devops-ai-overview/devops-ai-platform-overview?orgId=1&theme=light&kiosk"
                 className="absolute top-0 left-0 w-full h-full border-0"
                 title="Grafana Dashboard"
               />
@@ -87,13 +87,13 @@ export const MetricsDashboard = () => {
           
           <div className="flex gap-3">
             <Button variant="outline" size="sm" asChild>
-              <a href="http://localhost:3001" target="_blank" rel="noopener noreferrer">
+              <a href="http://localhost:30001" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Open Grafana
               </a>
             </Button>
             <Button variant="outline" size="sm" asChild>
-              <a href="http://localhost:9090" target="_blank" rel="noopener noreferrer">
+              <a href="http://localhost:30090" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Open Prometheus
               </a>

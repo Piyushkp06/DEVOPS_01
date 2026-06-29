@@ -435,19 +435,19 @@ const Monitoring = () => {
               <CardContent>
                 <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                   <iframe
-                    src="http://localhost:3001/d/devops-ai-overview/devops-ai-platform-overview?orgId=1&theme=light&kiosk"
+                    src="http://localhost:30001/d/devops-ai-overview/devops-ai-platform-overview?orgId=1&theme=light&kiosk"
                     className="absolute top-0 left-0 w-full h-full border-0 rounded-lg"
                     title="Grafana Dashboard"
                   />
                 </div>
                 <div className="mt-4 flex gap-3">
                   <Button variant="outline" asChild>
-                    <a href="http://localhost:3001" target="_blank" rel="noopener noreferrer">
+                    <a href="http://localhost:30001" target="_blank" rel="noopener noreferrer">
                       Open Full Grafana →
                     </a>
                   </Button>
                   <Button variant="outline" asChild>
-                    <a href="http://localhost:9090" target="_blank" rel="noopener noreferrer">
+                    <a href="http://localhost:30090" target="_blank" rel="noopener noreferrer">
                       Open Prometheus →
                     </a>
                   </Button>

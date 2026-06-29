@@ -8,7 +8,7 @@ import { Github, Box, Command, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_URL || "/api";
 
 const Onboarding = () => {
   const navigate = useNavigate();

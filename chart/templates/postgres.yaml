@@ -1,0 +1,64 @@
+# ── PostgreSQL StatefulSet ────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: {{ include "devops.namespace" . }}
+  labels:
+    {{- include "devops.labels" . | nindent 4 }}
+    {{- include "devops.selectorLabels" (dict "component" "postgres") | nindent 4 }}
+spec:
+  serviceName: "postgres-service"
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "devops.selectorLabels" (dict "component" "postgres") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "devops.selectorLabels" (dict "component" "postgres") | nindent 8 }}
+    spec:
+      containers:
+        - name: postgres
+          image: {{ .Values.postgres.image }}
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: devops-secrets
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", {{ .Values.postgres.user | quote }}]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", {{ .Values.postgres.user | quote }}]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.postgres.storage }}
+---
+# ── PostgreSQL Service ────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: {{ include "devops.namespace" . }}
+  labels:
+    {{- include "devops.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    {{- include "devops.selectorLabels" (dict "component" "postgres") | nindent 4 }}

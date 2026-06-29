@@ -1,0 +1,68 @@
+# ── Python Backend Deployment ─────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-backend
+  namespace: {{ include "devops.namespace" . }}
+  labels:
+    {{- include "devops.labels" . | nindent 4 }}
+    {{- include "devops.selectorLabels" (dict "component" "python-backend") | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas.pythonBackend }}
+  selector:
+    matchLabels:
+      {{- include "devops.selectorLabels" (dict "component" "python-backend") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "devops.selectorLabels" (dict "component" "python-backend") | nindent 8 }}
+    spec:
+      {{- if .Values.rbac.create }}
+      serviceAccountName: devops-platform-sa
+      {{- end }}
+      containers:
+        - name: python-backend
+          image: "{{ .Values.images.pythonBackend.repository }}:{{ .Values.images.pythonBackend.tag }}"
+          imagePullPolicy: {{ .Values.images.pythonBackend.pullPolicy }}
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: devops-config
+            - secretRef:
+                name: devops-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+# ── Python Backend Service ────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: python-backend-service
+  namespace: {{ include "devops.namespace" . }}
+  labels:
+    {{- include "devops.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    {{- include "devops.selectorLabels" (dict "component" "python-backend") | nindent 4 }}

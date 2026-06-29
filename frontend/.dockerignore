@@ -6,3 +6,7 @@ README.md
 Dockerfile
 .dockerignore
 .DS_Store
+
+# Ignore local environment variables
+.env
+.env.*

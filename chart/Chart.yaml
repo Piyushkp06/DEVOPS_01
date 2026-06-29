@@ -1,0 +1,16 @@
+apiVersion: v2
+name: devops-ai-platform
+description: AI-powered DevOps monitoring, incident management, and autonomous remediation platform
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - devops
+  - kubernetes
+  - ai
+  - incident-management
+  - monitoring
+  - autonomous-remediation
+home: https://github.com/Piyushkp06/DEVOPS
+maintainers:
+  - name: Piyush Kumar Pandey

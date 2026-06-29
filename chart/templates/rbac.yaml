@@ -1,0 +1,51 @@
+{{- if .Values.rbac.create }}
+# ── ServiceAccount ────────────────────────────────────────────────────────────
+# Used by node-backend and python-backend pods to authenticate with the
+# Kubernetes API when performing autonomous actions (restart, scale, rollback).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: devops-platform-sa
+  namespace: {{ include "devops.namespace" . }}
+  labels:
+    {{- include "devops.labels" . | nindent 4 }}
+---
+# ── ClusterRole ───────────────────────────────────────────────────────────────
+# Grants permissions to manage deployments, pods, and replica sets across
+# all namespaces so the autonomous agent can remediate issues anywhere.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: devops-platform-role
+  labels:
+    {{- include "devops.labels" . | nindent 4 }}
+rules:
+  # Read pods and their logs for monitoring / analysis
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "namespaces"]
+    verbs: ["get", "list", "watch"]
+  # Manage deployments, replicasets, statefulsets for restart/scale/rollback
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  # Read events for incident correlation
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list", "watch"]
+---
+# ── ClusterRoleBinding ───────────────────────────────────────────────────────
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: devops-platform-rolebinding
+  labels:
+    {{- include "devops.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: devops-platform-role
+subjects:
+  - kind: ServiceAccount
+    name: devops-platform-sa
+    namespace: {{ include "devops.namespace" . }}
+{{- end }}

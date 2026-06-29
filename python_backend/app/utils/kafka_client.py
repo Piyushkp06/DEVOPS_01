@@ -1,6 +1,6 @@
 import json
 import logging
-from kafka import KafkaProducer, KafkaConsumer
+from kafka import KafkaProducer
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
