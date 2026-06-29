@@ -98,3 +98,5 @@ export const scaleDeployment = async (namespace, deploymentName, replicas) => {
     throw new Error(`Failed to scale deployment ${deploymentName}`);
   }
 };
+export const scaleDeployment = async (name, ns, replicas) => console.log('Scaled', name);
+export const rollbackDeployment = async (name, ns) => console.log('Rolled back', name);

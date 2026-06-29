@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 import uvicorn
 from app.api.routes import router as analyzer_router
+from app.utils.kafka_client import kafka_manager
+from app.services.autonomous_agent import autonomous_agent
 
 app = FastAPI(
     title="DevOps AI Platform",
@@ -24,6 +26,11 @@ app.add_middleware(
 
 # Include analyzer routes
 app.include_router(analyzer_router, prefix="/api/ai", tags=["AI Analysis"])
+
+@app.on_event("startup")
+async def startup_event():
+    kafka_manager.connect_producer()
+    autonomous_agent.start_listening()
 
 @app.get("/")
 async def root():

@@ -10,6 +10,8 @@ import deploymentRoutes from './routes/deploymentRoutes.js';
 import logRoutes from './routes/logRoutes.js';
 import { metricsMiddleware } from './middlewares/metricsMiddleware.js';
 import { register } from './utils/metrics.js';
+import { connectProducer, connectConsumer } from './utils/kafka.js';
+import { handleAiAction } from './services/aiActionExecutor.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -80,14 +82,23 @@ app.use("/api/deployments", deploymentRoutes);
 app.use("/api/logs", logRoutes);
 
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log('\n' + '='.repeat(60));
-    console.log('🚀 DevOps Node.js Backend');
-    console.log('='.repeat(60));
-    console.log(`📍 Server: http://localhost:${PORT}`);
-    console.log(`📊 Metrics: http://localhost:${PORT}/metrics`);
-    console.log(`💚 Health: http://localhost:${PORT}/health`);
-    console.log('='.repeat(60) + '\n');
+// Connect to Kafka before starting the server
+connectProducer().then(() => {
+    connectConsumer(['ai-actions'], async (topic, message) => {
+        if (topic === 'ai-actions') {
+            await handleAiAction(message);
+        }
+    });
+
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log('\n' + '='.repeat(60));
+        console.log('🚀 DevOps Node.js Backend');
+        console.log('='.repeat(60));
+        console.log(`📍 Server: http://localhost:${PORT}`);
+        console.log(`📊 Metrics: http://localhost:${PORT}/metrics`);
+        console.log(`💚 Health: http://localhost:${PORT}/health`);
+        console.log('='.repeat(60) + '\n');
+    });
 });
 
 export default app;
